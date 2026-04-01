@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZipLink Analytics | Performance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #22d3ee;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(34, 211, 238, 0.05) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4rem 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1.5rem;
+        }
+
+        .title-group h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            background: linear-gradient(to right, #818cf8, #22d3ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .short-code-badge {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--success);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-muted);
+            padding: 1rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .click-count {
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loader">
+        <span class="loader"></span>
+    </div>
+
+    <div class="container" id="mainContent" style="visibility: hidden;">
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <h1>Link Insights</h1>
+                    <p class="stat-label">Detailed performance breakdown</p>
+                </div>
+                <div class="short-code-badge" id="displayCode">------</div>
+            </div>
+
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalClicks">0</div>
+                    <div class="stat-label">Total Clicks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeDays">0</div>
+                    <div class="stat-label">Active Days</div>
+                </div>
+            </div>
+
+            <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Daily Breakdown</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Clicks</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody id="statsTableBody">
+                    <!-- Data will be injected here -->
+                </tbody>
+            </table>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                No click data recorded yet. Share your link to start tracking!
+            </div>
+        </div>
+
+        <a href="/" class="back-link">← Back to Shortener</a>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const displayCode = document.getElementById('displayCode');
+            const tableBody = document.getElementById('statsTableBody');
+            const totalClicksEl = document.getElementById('totalClicks');
+            const activeDaysEl = document.getElementById('activeDays');
+            const emptyState = document.getElementById('emptyState');
+            const loader = document.getElementById('loader');
+            const mainContent = document.getElementById('mainContent');
+
+            if (!code) {
+                window.location.href = '/';
+                return;
+            }
+
+            displayCode.innerText = code;
+
+            try {
+                // Using the NEW detailed analytics endpoint
+                const response = await fetch(`/api/v1/urls/${code}/analytics/details`);
+                if (!response.ok) throw new Error('Failed to fetch analytics');
+                
+                const data = await response.json();
+                const dailyStats = data.dailyStats;
+                
+                if (dailyStats.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    let total = 0;
+                    dailyStats.forEach(item => {
+                        total += item.clicks;
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.date}</td>
+                            <td class="click-count">${item.clicks}</td>
+                            <td>
+                                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
+                                    <div style="width: ${Math.min(100, (item.clicks/50)*100)}%; height: 100%; background: var(--primary);"></div>
+                                </div>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    totalClicksEl.innerText = total;
+                    activeDaysEl.innerText = dailyStats.length;
+
+                    // Add Device Insights if they exist
+                    if (data.browserStats && data.browserStats.length > 0) {
+                        const deviceHeader = document.createElement('h2');
+                        deviceHeader.style = "font-size: 1.2rem; margin-top: 2.5rem; margin-bottom: 1rem;";
+                        deviceHeader.innerText = "Device & Browser Insights";
+                        
+                        const deviceGrid = document.createElement('div');
+                        deviceGrid.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;";
+                        
+                        const createSummaryList = (title, items, key) => {
+                            const container = document.createElement('div');
+                            container.style = "background: rgba(15, 23, 42, 0.4); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);";
+                            container.innerHTML = `<h3 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem;">Top ${title}</h3>`;
+                            
+                            items.slice(0, 5).forEach(item => {
+                                const itemRow = document.createElement('div');
+                                itemRow.style = "display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;";
+                                itemRow.innerHTML = `<span>${item[key]}</span><span style="color: var(--accent); font-weight: 700;">${item.clicks}</span>`;
+                                container.appendChild(itemRow);
+                            });
+                            return container;
+                        };
+
+                        deviceGrid.appendChild(createSummaryList("Browsers", data.browserStats, "browser"));
+                        deviceGrid.appendChild(createSummaryList("Operating Systems", data.osStats, "os"));
+                        
+                        const table = document.querySelector('table');
+                        table.parentNode.insertBefore(deviceHeader, table);
+                        table.parentNode.insertBefore(deviceGrid, table);
+                    }
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Could not load analytics for this code.");
+            } finally {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    mainContent.style.visibility = 'visible';
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
